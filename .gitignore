@@ -1,0 +1,46 @@
+# dbt build artifacts
+target/
+dbt_packages/
+logs/
+
+# Python venv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment and credentials
+.env
+.env.local
+.env.production
+profiles.yml
+.user.yml
+
+# OS/Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Compiled files
+*.so
+*.dylib
+
+# Coverage reports
+htmlcov/
+.coverage
+.pytest_cache/
+
+

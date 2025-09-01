@@ -1,0 +1,356 @@
+version: 2
+
+models:
+  # Fact Tables
+  - name: fct_listing
+    description: |
+      Fact table containing listing audit trail with change tracking functionality.
+      Grain: One row for each listing update, tracking changes in stock, price, and listing status.
+      Each record represents a specific point-in-time snapshot of a listing with its associated event type.
+    columns:
+      - name: listing_id
+        description: Natural key for listings (not unique - multiple records per listing for change tracking)
+        tests: [not_null]
+      - name: listing_sk
+        description: Listing surrogate key - consistent across all audit records for the same listing
+        tests: [not_null]
+      - name: product_sk
+        description: Product dimension surrogate key
+        tests: [not_null]
+      - name: variant_sk
+        description: Variant dimension surrogate key
+      - name: store_sk
+        description: Store dimension surrogate key
+      - name: vendor_sk
+        description: Vendor dimension surrogate key
+      - name: website_sk
+        description: Website dimension surrogate key
+      - name: stock_location_sk
+        description: Stock location dimension surrogate key
+      - name: taxon_sk
+        description: Taxon dimension surrogate key
+      - name: created_date_sk
+        description: Date dimension surrogate key for listing creation
+        tests: [not_null]
+      - name: listing_event_sk
+        description: Listing event dimension surrogate key
+      - name: stock_quantity
+        description: Current stock quantity
+      - name: price
+        description: Product price
+      - name: currency
+        description: Price currency
+      - name: approved
+        description: Whether listing is approved
+      - name: published
+        description: Whether listing is published
+      - name: is_active
+        description: Whether listing is both approved and published
+      - name: has_stock
+        description: Whether listing has stock available
+
+  - name: fct_orders_products
+    description: Orders enriched with product attributes at store/vendor level.
+    columns:
+      - name: order_id
+        tests: [not_null]
+      - name: order_number
+      - name: store_id
+      - name: vendor_id
+      - name: product_id
+      - name: product_name
+
+  # Dimension Tables
+  - name: dim_dates
+    description: Date dimension table with date attributes and business logic flags
+    columns:
+      - name: date_sk
+        description: Date surrogate key
+        tests: [not_null, unique]
+      - name: date_nk
+        description: Date natural key in YYYYMMDD format
+        tests: [not_null, unique]
+      - name: date_actual
+        description: Actual date value
+        tests: [not_null]
+      - name: year_actual
+        description: Year extracted from date
+        tests: [not_null]
+      - name: quarter_actual
+        description: Quarter extracted from date
+        tests: [not_null]
+      - name: month_actual
+        description: Month extracted from date
+        tests: [not_null]
+      - name: is_weekend
+        description: Flag indicating if date is weekend
+        tests: [not_null]
+      - name: is_weekday
+        description: Flag indicating if date is weekday
+        tests: [not_null]
+
+  - name: dim_listing_events
+    description: Dimension enumerating listing event types and actions.
+    columns:
+      - name: id
+        tests: [not_null, unique]
+      - name: event_id
+        tests: [not_null]
+      - name: event_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['listing','order','price','price-sales','stock','erp_stock']
+      - name: action
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['create','update-inc','update-dec','delete','published','unpublished']
+
+  - name: dim_product
+    description: Product dimension table
+    columns:
+      - name: product_sk
+        description: Product surrogate key
+        tests: [not_null, unique]
+      - name: product_nk
+        description: Product natural key
+        tests: [not_null, unique]
+      - name: product_id
+        description: Product ID
+        tests: [not_null]
+      - name: name
+        description: Product name
+        tests: [not_null]
+      - name: slug
+        description: Product slug
+      - name: tax_category_id
+        description: Tax category ID
+      - name: shipping_category_id
+        description: Shipping category ID
+
+  - name: dim_stock_locations
+    description: Stock location dimension table
+    columns:
+      - name: stock_location_sk
+        description: Stock location surrogate key
+        tests: [not_null, unique]
+      - name: stock_location_nk
+        description: Stock location natural key
+        tests: [not_null, unique]
+      - name: stock_location_id
+        description: Stock location ID
+        tests: [not_null]
+      - name: name
+        description: Stock location name
+        tests: [not_null]
+      - name: code
+        description: Stock location code
+      - name: vendor_id
+        description: Associated vendor ID
+      - name: active
+        description: Whether stock location is active
+
+  - name: dim_stores
+    description: Store dimension table
+    columns:
+      - name: store_sk
+        description: Store surrogate key
+        tests: [not_null, unique]
+      - name: store_nk
+        description: Store natural key
+        tests: [not_null, unique]
+      - name: store_name
+        description: Store name
+        tests: [not_null]
+      - name: store_status
+        description: Store status
+        tests: [not_null]
+      - name: store_region
+        description: Store region
+      - name: first_activity_date
+        description: Date of first store activity
+      - name: last_activity_date
+        description: Date of last store activity
+
+  - name: dim_taxons
+    description: Taxon/category dimension table with hierarchical structure
+    columns:
+      - name: taxon_sk
+        description: Taxon surrogate key
+        tests: [not_null, unique]
+      - name: taxon_nk
+        description: Taxon natural key
+        tests: [not_null, unique]
+      - name: taxon_id
+        description: Taxon ID
+        tests: [not_null]
+      - name: taxon_name
+        description: Taxon name
+        tests: [not_null]
+      - name: parent_id
+        description: Parent taxon ID
+      - name: hierarchy_level
+        description: Level in taxon hierarchy
+        tests: [not_null]
+      - name: cat_level_1
+        description: Top level category name
+      - name: is_root
+        description: Whether taxon is a root category
+        tests: [not_null]
+      - name: is_leaf
+        description: Whether taxon is a leaf category
+        tests: [not_null]
+
+  - name: dim_variants
+    description: Product variant dimension table
+    columns:
+      - name: variant_sk
+        description: Variant surrogate key
+        tests: [not_null, unique]
+      - name: variant_nk
+        description: Variant natural key
+        tests: [not_null, unique]
+      - name: id
+        description: Variant ID
+        tests: [not_null]
+      - name: sku
+        description: Stock keeping unit
+      - name: weight
+        description: Variant weight
+      - name: height
+        description: Variant height
+      - name: width
+        description: Variant width
+      - name: depth
+        description: Variant depth
+      - name: barcode
+        description: Product barcode
+
+  - name: dim_vendor
+    description: Vendor dimension table (derived from products)
+    columns:
+      - name: vendor_sk
+        description: Vendor surrogate key
+        tests: [not_null, unique]
+      - name: vendor_nk
+        description: Vendor natural key
+        tests: [not_null, unique]
+      - name: vendor_name
+        description: Vendor name
+        tests: [not_null]
+      - name: vendor_status
+        description: Vendor status
+        tests: [not_null]
+      - name: first_product_created_at
+        description: Date of first product creation
+      - name: last_product_updated_at
+        description: Date of last product update
+
+  - name: dim_vendors
+    description: Comprehensive vendor dimension table
+    columns:
+      - name: vendor_sk
+        description: Vendor surrogate key
+        tests: [not_null, unique]
+      - name: vendor_nk
+        description: Vendor natural key
+        tests: [not_null, unique]
+      - name: vendor_id
+        description: Vendor ID
+        tests: [not_null]
+      - name: name
+        description: Vendor name
+        tests: [not_null]
+      - name: address
+        description: Vendor address
+      - name: phone
+        description: Vendor phone
+      - name: email
+        description: Vendor email
+      - name: is_individual
+        description: Whether vendor is individual
+        tests: [not_null]
+      - name: is_verified
+        description: Whether vendor is verified
+      - name: employee_count
+        description: Number of employees
+      - name: currency
+        description: Vendor currency
+
+  - name: dim_websites
+    description: Website dimension table
+    columns:
+      - name: website_sk
+        description: Website surrogate key
+        tests: [not_null, unique]
+      - name: website_nk
+        description: Website natural key
+        tests: [not_null, unique]
+      - name: id
+        description: Website ID
+        tests: [not_null]
+      - name: name
+        description: Website name
+        tests: [not_null]
+      - name: domain
+        description: Website domain
+      - name: vendor_id
+        description: Associated vendor ID
+      - name: is_active
+        description: Whether website is active
+        tests: [not_null]
+      - name: currency
+        description: Website currency
+      - name: phone1
+        description: Primary phone number
+      - name: email
+        description: Website email
+
+  - name: dim_options
+    description: |
+      Product options dimension table combining option types and option values.
+      This table provides a comprehensive view of all available product options
+      with their hierarchical relationship (option type -> option value).
+      Examples: Size: Small, Color: Red, Material: Cotton
+    columns:
+      - name: option_sk
+        description: Options surrogate key (combination of option_type and option_value)
+        tests: [not_null, unique]
+      - name: option_value_nk
+        description: Option value natural key
+        tests: [not_null]
+      - name: option_value_id
+        description: Option value ID
+        tests: [not_null]
+      - name: option_value_code
+        description: Option value code
+      - name: option_value_name
+        description: Option value name
+        tests: [not_null]
+      - name: option_value_presentation
+        description: Option value display presentation
+      - name: option_value_position
+        description: Option value position for ordering
+      - name: option_type_nk
+        description: Option type natural key
+        tests: [not_null]
+      - name: option_type_id
+        description: Option type ID
+        tests: [not_null]
+      - name: option_type_name
+        description: Option type name (e.g., Size, Color)
+        tests: [not_null]
+      - name: option_type_presentation
+        description: Option type display presentation
+      - name: option_type_position
+        description: Option type position for ordering
+      - name: website_id
+        description: Associated website ID
+      - name: option_full_name
+        description: Combined option type and value name
+        tests: [not_null]
+      - name: option_full_presentation
+        description: Combined option type and value presentation
+
+

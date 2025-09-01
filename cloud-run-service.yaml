@@ -1,0 +1,30 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: dbt-transformer-service
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/cpu-throttling: "false"
+    spec:
+      containerConcurrency: 1
+      timeoutSeconds: 3600
+      containers:
+      - image: gcr.io/cody-439704/dbt-transformer:latest
+        resources:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+        env:
+        - name: BIGQUERY_PROJECT_ID
+          value: "cody-439704"
+        - name: BIGQUERY_LOCATION
+          value: "EU"
+        - name: BIGQUERY_DATASET
+          value: "transformer_dbt_prod"
+        - name: DBT_TARGET
+          value: "prod"

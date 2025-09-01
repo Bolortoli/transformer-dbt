@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: shoppy_aurora
+    description: Raw Shoppy Aurora extracted tables
+    database: "{{ env_var('BIGQUERY_PROJECT_ID', target.project) }}"
+    schema: shoppy_aurora
+    tables:
+      - name: raw_spree_orders
+      - name: raw_spree_products
+      - name: raw_spree_variants
+      - name: raw_spree_stock_items
+      - name: raw_spree_prices
+      - name: raw_spree_taxons
+      - name: raw_spree_vendors
+      - name: raw_spree_stores
+      - name: raw_spree_stock_locations
+      - name: raw_spree_option_types
+      - name: raw_spree_option_values
+      - name: raw_spree_option_type_prototypes
+      - name: raw_spree_option_value_variants
+      - name: raw_spree_product_option_types
+      - name: raw_spree_product_option_values
+      - name: raw_shoppy_listings
+      - name: raw_shoppy_listings_taxons
+      - name: raw_shoppy_websites
+
+

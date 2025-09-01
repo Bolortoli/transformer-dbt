@@ -1,0 +1,81 @@
+name: "transformer_dbt"
+version: "1.0.0"
+config-version: 2
+
+profile: "transformer_dbt"
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  transformer_dbt:
+    +materialized: table
+    +persist_docs:
+      relation: true
+      columns: true
+    +schema: "{{ env_var('BIGQUERY_DATASET', 'transformer_dbt_dev_eu') }}"
+    
+    # Staging models
+    staging:
+      +materialized: view
+      +schema: staging
+    
+    # Marts models with specific configurations
+    marts:
+      +materialized: table
+      +schema: marts
+      
+      # Fact tables - incremental for large datasets
+      fct_listing:
+        +materialized: incremental
+        +on_schema_change: append_new_columns
+        +partition_by:
+          field: updated_at
+          data_type: timestamp
+          granularity: day
+        +cluster_by: ["listing_id", "product_sk"]
+        +unique_key: ["listing_id", "updated_at"]
+        
+      fct_orders_products:
+        +materialized: incremental
+        +on_schema_change: append_new_columns
+        +partition_by:
+          field: created_at
+          data_type: timestamp
+          granularity: day
+        +cluster_by: ["order_id", "product_id"]
+        +unique_key: ["order_id", "product_id"]
+      
+      # Dimension tables - table materialization with SCD support
+      dim_product:
+        +materialized: table
+        +unique_key: "product_sk"
+      
+      dim_dates:
+        +materialized: table
+        +unique_key: "date_sk"
+        
+      dim_listing_events:
+        +materialized: table
+        +unique_key: "id"
+
+# Global configurations
+vars:
+  # Environment-specific configurations
+  start_date: '2020-01-01'
+  
+  # dbt-utils configurations
+  'dbt_utils:dispatch_list': ['dbt_utils']
+
+# Target-specific configurations
+on-run-start: "{{ log('Starting dbt run for profile: ' ~ target.name, info=true) }}"
+on-run-end: "{{ log('Completed dbt run for profile: ' ~ target.name, info=true) }}"
+
+
