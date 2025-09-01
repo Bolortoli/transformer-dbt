@@ -113,6 +113,14 @@ dbt run --select fct_listing
 dbt build
 ```
 
+**Run transformer locally:**
+```bash
+cd transformer-dbt                       
+. .venv/bin/activate
+set -a; source .env; set +a
+dbt run -s fct_listing --target "$TARGET"
+```
+
 **Production Deployment:**
 ```bash
 ./deploy.sh prod run
